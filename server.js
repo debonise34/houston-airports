@@ -12,17 +12,17 @@ const MINIMUM_FARE = 50;
 
 app.post("/calculate-fare", async (req, res) => {
   try {
-    const { pickup, airport } = req.body;
-    if (!pickup || !airport) return res.status(400).json({ error: "Pickup address and airport are required." });
+    const { pickup, dropoff } = req.body;
+    if (!pickup || !dropoff) return res.status(400).json({ error: "Pickup address and dropoff are required." });
     if (!process.env.GOOGLE_MAPS_API_KEY) return res.status(500).json({ error: "Google Maps API key is missing on the server." });
 
-    const params = new URLSearchParams({ origins: pickup, destinations: airport, units: "imperial", key: process.env.GOOGLE_MAPS_API_KEY });
+    const params = new URLSearchParams({ origins: pickup, destinations: dropoff, units: "imperial", key: process.env.GOOGLE_MAPS_API_KEY });
     const response = await fetch(`https://maps.googleapis.com/maps/api/distancematrix/json?${params.toString()}`);
     const data = await response.json();
 
     if (data.status !== "OK") return res.status(400).json({ error: "Google Maps could not read that address." });
     const element = data.rows?.[0]?.elements?.[0];
-    if (!element || element.status !== "OK") return res.status(400).json({ error: "Could not calculate distance from pickup to airport." });
+    if (!element || element.status !== "OK") return res.status(400).json({ error: "Could not calculate distance from pickup to dropoff." });
 
     const miles = Math.round((element.distance.value / 1609.344) * 10) / 10;
     const duration = element.duration.text;
@@ -36,7 +36,7 @@ app.post("/calculate-fare", async (req, res) => {
 
 app.post("/create-checkout-session", async (req, res) => {
   try {
-    const { name, phone, pickup, airport, date, slot, miles, duration, fare } = req.body;
+    const { name, phone, pickup, dropoff, date, slot, miles, duration, fare } = req.body;
     if (!allowedSlots.includes(slot)) return res.status(400).json({ error: "Invalid pickup time." });
     const amount = Math.round(Number(fare) * 100);
     if (!amount || amount < 5000) return res.status(400).json({ error: "Invalid fare amount." });
@@ -44,8 +44,8 @@ app.post("/create-checkout-session", async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
-      line_items: [{ price_data: { currency: "usd", product_data: { name: "Houston Airport Slots - Scheduled Airport Ride", description: `${date} at ${slot} | ${miles} miles | ${pickup} to ${airport}` }, unit_amount: amount }, quantity: 1 }],
-      metadata: { site: "HoustonAirportSlots.com", customer_name: name || "", customer_phone: phone || "", pickup: pickup || "", airport: airport || "", pickup_date: date || "", pickup_time: slot || "", miles: String(miles || ""), duration: duration || "", fare: String(fare || "") },
+      line_items: [{ price_data: { currency: "usd", product_data: { name: "Houston Airport Slots - Scheduled Airport Ride", description: `${date} at ${slot} | ${miles} miles | ${pickup} to ${dropoff}` }, unit_amount: amount }, quantity: 1 }],
+      metadata: { site: "HoustonAirportSlots.com", customer_name: name || "", customer_phone: phone || "", pickup: pickup || "", dropoff: dropoff || "", pickup_date: date || "", pickup_time: slot || "", miles: String(miles || ""), duration: duration || "", fare: String(fare || "") },
       success_url: `${process.env.DOMAIN}/success.html`,
       cancel_url: `${process.env.DOMAIN}/cancel.html`
     });
