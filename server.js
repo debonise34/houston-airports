@@ -5,7 +5,7 @@ const app = express();
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 app.use(express.json());
 app.use(express.static(__dirname));
-const allowedSlots = ["8:00 PM","10:00 PM","12:00 AM","2:00 AM","4:00 AM","10:00 AM","12:00 PM"];
+const allowedSlots = ["12:00 AM","2:00 AM","4:00 AM","10:00 AM","12:00 PM","2:00 PM","8:00 PM","10:00 PM"];
 const BASE_FARE = 20;
 const PER_MILE = 2.50;
 const MINIMUM_FARE = 50;
